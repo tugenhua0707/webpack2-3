@@ -13,15 +13,15 @@ var isLine = process.env.NODE_ENV === 'production';
 
 var config = {
   entry: {
-    
+    'vendor': './src/libs/jquery.js'
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
     publicPath: '',
-    filename: isLine ? 'static/js/[name].[chunkhash].js' : 'static/js/[name].js'
+    filename: isLine ? 'static/js/[name].[chunkhash:5].js' : 'static/js/[name].js'
   },
   resolve: {
-    extensions: ['*', '.js', '.json'],
+    extensions: ['*', '.js', '.json','styl'],
   },
   module: {
     rules: [
@@ -71,7 +71,7 @@ var config = {
           loader: 'url-loader',
           options: {
             limit: 10000,
-            name: 'static/images/[name].[hash:8].[ext]',
+            name: 'static/images/[name].[hash:5].[ext]',
             publicPath: '../../'
           }
         }
@@ -81,7 +81,7 @@ var config = {
         use: {
           loader: "file-loader",
           options: {
-            name: 'static/fonts/[name].[hash:8].[ext]',
+            name: 'static/fonts/[name].[hash:5].[ext]',
             publicPath: '../../',
           }
         }
@@ -91,7 +91,7 @@ var config = {
   plugins: [
     // 详见 https://doc.webpack-china.org/plugins/extract-text-webpack-plugin/#-extract
     new ExtractTextPlugin({
-      filename: 'static/css/[name].[contenthash].css',
+      filename: 'static/css/[name].[contenthash:5].css',
       allChunks: true,
       // 是否禁用插件 线上不禁用，日常环境禁用(如果不禁用的话，热加载就不会实时生效)
       disable: isLine ? false : true 
@@ -158,7 +158,12 @@ if (entriesLength === 1) {
       module.resource && module.resource.indexOf('node_modules') >= 0 &&
       module.resource.match(/\.js$/)
     )
-  }))
+  }));
+  config.plugins.push(
+    new Webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery'
+  }));
 } else {
   Object.keys(entries).forEach(function (name) {
     config.entry[name] = isLine ? entries[name] : [hot, entries[name]];
@@ -169,34 +174,16 @@ if (entriesLength === 1) {
       chunks: [name, name + '.vendor', 'vendor', 'manifest'],
       chunksSortMode: 'dependency',
     });
-    var commonPlugin = new Webpack.optimize.CommonsChunkPlugin({
-      name: [name + '.vendor'],
-      chunks: [name],
-      minChunks: (module, count) => {
-        module.resource && module.resource.indexOf('node_modules') >= 0 &&
-        module.resource.match(/\.js$/) && count === 1
-      }
-    });
-    config.plugins.push(htmlPlugin,commonPlugin);
+    config.plugins.push(htmlPlugin);
   });
   config.plugins.push(new Webpack.optimize.CommonsChunkPlugin({
-    name: ['vendor'],
-    minChunks: (module, count) => (
-      count >= 2
-    )
+    name: ['vendor','manifest'],
+    minChunks: 2
+  }))
+  config.plugins.push(
+    new Webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery'
   }))
 }
-
-config.plugins.push(new Webpack.optimize.CommonsChunkPlugin({
-  name: ['manifest'],
-  minChunks: Infinity
-}));
-
-
-// 把  manifest.js 嵌入到head内 减少请求
-/*
-config.plugins.push(new HtmlWebpackPlugin({
-  head: 'manifest.'
-}))
-*/
 module.exports = config;

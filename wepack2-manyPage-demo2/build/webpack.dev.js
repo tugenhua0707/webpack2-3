@@ -20,7 +20,7 @@ config = merge(config, {
   }
 })
 
-var port = 8080;
+var port = 7878;
 
 var app = express();
 
